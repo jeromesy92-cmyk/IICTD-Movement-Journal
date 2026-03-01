@@ -55,6 +55,8 @@ import OrgChart from './components/OrgChart';
 import MovementMap from './components/MovementMap';
 
 // Types
+import GuidedTour from './components/GuidedTour';
+
 export type Role = 'Administrator' | 'System Administrator' | 'Senior Field Engineer' | 'Field Engineer';
 
 export interface UserData {
@@ -101,6 +103,7 @@ export default function App() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isAppearanceModalOpen, setIsAppearanceModalOpen] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
+  const [runTour, setRunTour] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -115,6 +118,13 @@ export default function App() {
         .catch(err => console.error("User refresh failed:", err));
 
       const interval = setInterval(fetchNotifications, 5000); // Auto-refresh every 5 seconds
+      
+      // Check if tour has run
+      const hasSeenTour = localStorage.getItem(`iictd_tour_seen_${user.id}`);
+      if (!hasSeenTour) {
+        setRunTour(true);
+      }
+
       return () => clearInterval(interval);
     }
   }, [user?.id]);
@@ -270,6 +280,17 @@ export default function App() {
             </div>
             
             <div className="flex items-center gap-6">
+              {/* Help/Tour Icon */}
+              <div className="relative">
+                <button 
+                  className="relative focus:outline-none hover:bg-accent p-2 rounded-full transition-colors"
+                  onClick={() => setRunTour(true)}
+                  title="Start Guided Tour"
+                >
+                  <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+                </button>
+              </div>
+
               {/* Debug/Error Icon */}
               <div className="relative">
                 <button 
@@ -341,7 +362,7 @@ export default function App() {
               <div className="relative">
                 <button onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}>
                   <img 
-                    src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name}&background=0284c7&color=fff&size=128`}
+                    src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=0284c7&color=fff&size=128`}
                     alt="Avatar"
                     className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/50 shadow-lg hover:ring-2 ring-blue-400 transition-all"
                   />
@@ -417,8 +438,9 @@ export default function App() {
         </main>
         
         <Toaster position="top-right" />
-                {isStatusModalOpen && <StatusModal user={user} onClose={() => setIsStatusModalOpen(false)} onStatusUpdate={handleStatusUpdate} />}
+        {isStatusModalOpen && <StatusModal user={user} onClose={() => setIsStatusModalOpen(false)} onStatusUpdate={handleStatusUpdate} />}
         {isAppearanceModalOpen && <AppearanceModal theme={theme} setTheme={setTheme} onClose={() => setIsAppearanceModalOpen(false)} />}
+        <GuidedTour run={runTour} setRun={setRunTour} userRole={user.role} />
       </div>
     </Router>
   );
@@ -455,11 +477,12 @@ function Sidebar({ user }: { user: UserData }) {
         <nav className="space-y-1 flex-1">
           {menuItems.filter(item => item.roles.includes(user.role)).map((item) => {
             const isActive = location.pathname === item.path;
+            const tourClass = `nav-${item.path === '/' ? 'dashboard' : item.path.substring(1)}`;
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${tourClass} ${
                                                       isActive 
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -486,7 +509,7 @@ function Sidebar({ user }: { user: UserData }) {
           >
             <div className="relative">
               <img 
-                src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name}&background=0284c7&color=fff&size=128`}
+                src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=0284c7&color=fff&size=128`}
                 alt="Avatar"
                 className="w-10 h-10 rounded-xl object-cover border border-border group-hover:border-primary/50 transition-colors"
               />

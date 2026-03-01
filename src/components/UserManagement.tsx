@@ -434,6 +434,9 @@ export default function UserManagement({ user }: { user: UserData }) {
     let aValue: any = a[key as keyof UserData];
     let bValue: any = b[key as keyof UserData];
 
+    if (Array.isArray(aValue)) aValue = aValue.join(', ');
+    if (Array.isArray(bValue)) bValue = bValue.join(', ');
+
     if (aValue === null || aValue === undefined) aValue = '';
     if (bValue === null || bValue === undefined) bValue = '';
 
@@ -513,7 +516,7 @@ export default function UserManagement({ user }: { user: UserData }) {
         
         <button 
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-xl text-sm font-medium text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all"
+          className="add-user-btn flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-xl text-sm font-medium text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all"
         >
           <UserPlus className="w-4 h-4" />
           Add New User
@@ -533,7 +536,7 @@ export default function UserManagement({ user }: { user: UserData }) {
             />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="relative">
+            <div className="relative role-filter">
               <select 
                 className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 px-4 pr-10 text-xs text-slate-300 focus:outline-none focus:border-blue-500/50 transition-all appearance-none cursor-pointer"
                 value={roleFilter}
@@ -689,7 +692,7 @@ export default function UserManagement({ user }: { user: UserData }) {
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <img 
-                          src={u.avatar_url || `https://ui-avatars.com/api/?name=${u.full_name}&background=0284c7&color=fff&size=128`}
+                          src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name)}&background=0284c7&color=fff&size=128`}
                           alt="Avatar"
                           className="w-10 h-10 rounded-xl object-cover ring-2 ring-white/5"
                         />
@@ -1083,7 +1086,7 @@ export default function UserManagement({ user }: { user: UserData }) {
                 <div className="flex flex-col items-center text-center mb-10">
                   <div className="relative mb-6">
                     <img 
-                      src={viewingUser.avatar_url || `https://ui-avatars.com/api/?name=${viewingUser.full_name}&background=0284c7&color=fff&size=256`}
+                      src={viewingUser.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(viewingUser.full_name)}&background=0284c7&color=fff&size=256`}
                       alt="Avatar"
                       className="w-32 h-32 rounded-[2.5rem] object-cover ring-8 ring-[#001a33] shadow-2xl"
                     />

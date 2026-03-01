@@ -200,7 +200,7 @@ export default function OrgChart({ user }: { user: UserData }) {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="bg-[#001a33] border border-white/10 rounded-2xl p-6 shadow-xl overflow-hidden">
+        <div className="org-chart-container bg-[#001a33] border border-white/10 rounded-2xl p-6 shadow-xl overflow-hidden">
           {tree.length > 0 ? (
             <div className="space-y-2">
               {tree.map(node => (

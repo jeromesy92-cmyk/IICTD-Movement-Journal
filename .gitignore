@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+movement_journal.db
+database.sqlite
+uploads/

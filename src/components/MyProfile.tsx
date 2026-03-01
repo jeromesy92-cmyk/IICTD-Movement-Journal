@@ -73,61 +73,76 @@ export default function MyProfile({ user, onUpdate }: { user: UserData, onUpdate
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type === 'image/png' || file.type === 'image/jpeg') {
-        setNewAvatar(file);
-        setPreviewUrl(URL.createObjectURL(file));
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          // Do not set formData.avatar_url here to avoid sending huge base64 strings in PUT
+          setPreviewUrl(base64String);
+          setNewAvatar(file);
+        };
+        reader.readAsDataURL(file);
       } else {
         toast.error('The file must be a PNG or JPG');
       }
     }
   };
 
-  const handleAvatarUpload = async () => {
-    if (!newAvatar) return;
-    const uploadFormData = new FormData();
-    uploadFormData.append('avatar', newAvatar);
+  const handleAvatarUpload = async (): Promise<string | undefined> => {
+    if (!newAvatar) return undefined;
+    
+    const uploadData = new FormData();
+    uploadData.append('avatar', newAvatar);
 
-    const promise = fetch(`/api/users/${user.id}/avatar`, { method: 'POST', body: uploadFormData })
-      .then(res => res.ok ? res.json() : Promise.reject('Upload failed'))
-      .then(data => {
+    const uploadPromise = fetch(`/api/users/${user.id}/avatar`, {
+      method: 'POST',
+      body: uploadData,
+    }).then(async res => {
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      if (data.success) {
         onUpdate(data.user);
+        setFormData(prev => ({ ...prev, avatar_url: data.user.avatar_url }));
         setNewAvatar(null);
         setPreviewUrl(null);
-        return 'Avatar updated successfully';
-      });
-
-    toast.promise(promise, {
-      loading: 'Uploading...',
-      success: (msg) => msg,
-      error: 'Upload failed',
+        return data.user.avatar_url;
+      } else {
+        throw new Error(data.message || 'Upload failed');
+      }
     });
+
+    toast.promise(uploadPromise, {
+      loading: 'Uploading avatar...',
+      success: 'Avatar updated successfully',
+      error: 'Failed to upload avatar',
+    });
+
+    return uploadPromise;
   };
 
-  const handleAvatarDelete = async () => {
-    const promise = fetch(`/api/users/${user.id}/avatar`, { method: 'DELETE' })
-      .then(res => res.ok ? res.json() : Promise.reject('Delete failed'))
-      .then(data => {
-        onUpdate(data.user);
-        setNewAvatar(null);
-        setPreviewUrl(null);
-        return 'Avatar removed successfully';
-      });
+  const handleProfileSave = async () => {
+    let currentFormData = { ...formData };
+    
+    // If there's a pending avatar upload, do it first
+    if (newAvatar) {
+      try {
+        const newAvatarUrl = await handleAvatarUpload();
+        if (newAvatarUrl) {
+          currentFormData.avatar_url = newAvatarUrl;
+        }
+      } catch (e) {
+        toast.error('Failed to upload avatar before saving profile');
+        return;
+      }
+    }
 
-    toast.promise(promise, {
-      loading: 'Removing...',
-      success: (msg) => msg,
-      error: 'Failed to remove avatar',
-    });
-  };
-
-  const handleProfileSave = () => {
     const promise = fetch(`/api/users/${user.id}`, { 
       method: 'PUT', 
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
+      body: JSON.stringify(currentFormData)
     })
       .then(res => res.ok ? res.json() : Promise.reject('Update failed'))
       .then(() => {
-        onUpdate(formData);
+        onUpdate(currentFormData);
         return 'Profile updated successfully';
       });
 
@@ -135,6 +150,33 @@ export default function MyProfile({ user, onUpdate }: { user: UserData, onUpdate
       loading: 'Saving...',
       success: (msg) => msg,
       error: 'Update failed',
+    });
+    
+    return promise;
+  };
+
+  const handleAvatarDelete = async () => {
+    const promise = fetch(`/api/users/${user.id}/avatar`, { 
+      method: 'DELETE', 
+    })
+      .then(res => res.ok ? res.json() : Promise.reject('Delete failed'))
+      .then(data => {
+        if (data.success) {
+          const updatedFormData = { ...formData, avatar_url: null };
+          setFormData(updatedFormData);
+          onUpdate(data.user);
+          setNewAvatar(null);
+          setPreviewUrl(null);
+          return 'Avatar removed successfully';
+        } else {
+          return Promise.reject(data.message || 'Delete failed');
+        }
+      });
+
+    toast.promise(promise, {
+      loading: 'Removing...',
+      success: (msg) => msg,
+      error: 'Failed to remove avatar',
     });
   };
 
@@ -151,7 +193,7 @@ export default function MyProfile({ user, onUpdate }: { user: UserData, onUpdate
           <div className="flex flex-col items-center gap-6 py-8">
             <div className="relative group">
               <img 
-                src={previewUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name}&background=1e293b&color=94a3b8&size=256`}
+                src={previewUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=1e293b&color=94a3b8&size=256`}
                 alt="Profile"
                 className="w-48 h-48 rounded-2xl object-cover shadow-2xl"
               />
@@ -242,7 +284,7 @@ export default function MyProfile({ user, onUpdate }: { user: UserData, onUpdate
           <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             <ProfileInput label={t("Website")} id="website" value={formData.website} onChange={handleInputChange} placeholder="Your website" locked />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             <ProfileInput label={t("Role")} id="profile_role" value={formData.profile_role} onChange={handleInputChange} placeholder="Your role" locked />
             <ProfileInput label={t("Headline")} id="headline" value={formData.headline} onChange={handleInputChange} placeholder="Your headline" locked />
             <ProfileInput label={t("About")} id="about" value={formData.about} onChange={handleInputChange} type="textarea" placeholder="Interested in connecting or collaborating? Feel free to reach out!" locked />
@@ -268,7 +310,7 @@ export default function MyProfile({ user, onUpdate }: { user: UserData, onUpdate
         </div>
       </div>
 
-      <div className="mt-8 pt-8 border-t border-border">
+      <div className="mt-8 pt-8 border-t border-border w-full md:w-1/2">
         <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
           <Activity className="w-6 h-6" />
           {t('Recent Activity')}

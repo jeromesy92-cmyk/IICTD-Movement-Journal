@@ -114,7 +114,7 @@ export default function Dashboard({ user }: { user: UserData }) {
         <div className="flex items-center gap-6">
           <div className="relative">
             <img 
-              src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name}&background=0284c7&color=fff&size=128`}
+              src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=0284c7&color=fff&size=128`}
               alt="Avatar"
               className="w-20 h-20 rounded-3xl object-cover border-4 border-blue-500/20 shadow-2xl"
             />

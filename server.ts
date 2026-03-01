@@ -185,7 +185,8 @@ if (!adminExists) {
 
 async function startServer() {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // Serve uploaded files statically
   const uploadsDir = path.join(__dirname, 'uploads');
@@ -475,7 +476,7 @@ async function startServer() {
       role, supervisor_id, status, email, phone_number, location, date_of_birth, 
       language, locale, first_day_of_week, website, x_handle, fediverse_handle,
       organisation, profile_role, headline, about, online_status, status_message,
-      current_user_id
+      current_user_id, avatar_url
     } = req.body;
     const districtString = Array.isArray(district) ? district.join(',') : district;
     
@@ -519,6 +520,11 @@ async function startServer() {
           email, phone_number, location, date_of_birth, language, locale, first_day_of_week, website,
           x_handle, fediverse_handle, organisation, profile_role, headline, about
         ];
+
+        if (avatar_url !== undefined) {
+          query += `, avatar_url = ?`;
+          params.push(avatar_url);
+        }
 
         if (password) {
           query += `, password = ?`;
@@ -676,6 +682,15 @@ async function startServer() {
     const avatarUrl = `/uploads/${req.file.filename}`;
 
     try {
+      // First, get the current avatar_url to delete the old file
+      const user = db.prepare('SELECT avatar_url FROM users WHERE id = ?').get(id) as UserData;
+      if (user && user.avatar_url && user.avatar_url.startsWith('/uploads/')) {
+        const oldFilePath = path.join(__dirname, user.avatar_url);
+        if (fs.existsSync(oldFilePath)) {
+          fs.unlinkSync(oldFilePath);
+        }
+      }
+
       db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(avatarUrl, id);
       const updatedUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
       res.json({ success: true, user: updatedUser });
@@ -689,7 +704,7 @@ async function startServer() {
     try {
       // First, get the current avatar_url to delete the file
       const user = db.prepare('SELECT avatar_url FROM users WHERE id = ?').get(id) as UserData;
-      if (user && user.avatar_url) {
+      if (user && user.avatar_url && user.avatar_url.startsWith('/uploads/')) {
         const filePath = path.join(__dirname, user.avatar_url);
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
