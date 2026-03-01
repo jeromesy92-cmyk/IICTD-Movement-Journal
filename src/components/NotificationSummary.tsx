@@ -18,12 +18,12 @@ interface Notification {
 
 const getNotificationIcon = (type: NotificationType) => {
   switch (type) {
-    case 'approval': return <CheckCircle className="w-4 h-4 text-emerald-400" />;
-    case 'assignment': return <UserPlus className="w-4 h-4 text-blue-400" />;
-    case 'alert': return <AlertCircle className="w-4 h-4 text-rose-400" />;
-    case 'system': return <Info className="w-4 h-4 text-amber-400" />;
-    case 'security': return <Shield className="w-4 h-4 text-indigo-400" />;
-    default: return <Bell className="w-4 h-4 text-slate-400" />;
+    case 'approval': return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+    case 'assignment': return <UserPlus className="w-4 h-4 text-blue-500" />;
+    case 'alert': return <AlertCircle className="w-4 h-4 text-rose-500" />;
+    case 'system': return <Info className="w-4 h-4 text-amber-500" />;
+    case 'security': return <Shield className="w-4 h-4 text-indigo-500" />;
+    default: return <Bell className="w-4 h-4 text-muted-foreground" />;
   }
 };
 
@@ -34,7 +34,7 @@ const getNotificationColor = (type: NotificationType) => {
     case 'alert': return 'bg-rose-500/10 border-rose-500/20';
     case 'system': return 'bg-amber-500/10 border-amber-500/20';
     case 'security': return 'bg-indigo-500/10 border-indigo-500/20';
-    default: return 'bg-slate-500/10 border-slate-500/20';
+    default: return 'bg-muted/50 border-border';
   }
 };
 
@@ -156,20 +156,20 @@ export default function NotificationSummary({ user }: { user: UserData }) {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Notifications</h1>
-          <p className="text-slate-400 text-sm mt-1">Stay updated with system alerts and activity.</p>
+          <h1 className="text-3xl font-black text-foreground tracking-tight">Notifications</h1>
+          <p className="text-muted-foreground text-sm mt-1">Stay updated with system alerts and activity.</p>
         </div>
       </div>
 
-      <div className="bg-[#001a33] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-white/5 bg-white/[0.01] flex flex-col gap-6">
+      <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-2xl">
+        <div className="p-6 border-b border-border bg-muted/10 flex flex-col gap-6">
           <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
             <div className="relative flex-1 w-full md:max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input 
                 type="text" 
                 placeholder="Search notifications..." 
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-600"
+                className="w-full bg-input border border-border rounded-2xl py-3 pl-12 pr-4 text-sm text-foreground focus:outline-none focus:border-ring transition-all placeholder:text-muted-foreground"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -178,19 +178,19 @@ export default function NotificationSummary({ user }: { user: UserData }) {
             <div className="flex gap-2 w-full md:w-auto">
               <button 
                 onClick={() => setFilter('all')}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === 'all' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === 'all' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-accent/50 text-muted-foreground hover:bg-accent'}`}
               >
                 All
               </button>
               <button 
                 onClick={() => setFilter('unread')}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === 'unread' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === 'unread' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-accent/50 text-muted-foreground hover:bg-accent'}`}
               >
                 Unread
               </button>
               <button 
                 onClick={() => setFilter('read')}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === 'read' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === 'read' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-accent/50 text-muted-foreground hover:bg-accent'}`}
               >
                 Read
               </button>
@@ -198,15 +198,15 @@ export default function NotificationSummary({ user }: { user: UserData }) {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center mr-2">Filter by Type:</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center mr-2">Filter by Type:</span>
             {(['all', 'approval', 'assignment', 'system', 'alert', 'security', 'general'] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => setTypeFilter(type)}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
                   typeFilter === type 
-                    ? 'bg-white/10 border-white/20 text-white' 
-                    : 'bg-transparent border-white/5 text-slate-500 hover:border-white/10 hover:text-slate-400'
+                    ? 'bg-accent border-border text-foreground' 
+                    : 'bg-transparent border-border text-muted-foreground hover:border-accent hover:text-foreground'
                 }`}
               >
                 {type}
@@ -217,20 +217,20 @@ export default function NotificationSummary({ user }: { user: UserData }) {
 
         <div className="overflow-x-auto">
           {selectedNotifications.length > 0 && (
-            <div className="bg-blue-600/20 border-b border-blue-500/30 px-6 py-3 flex items-center justify-between">
-              <span className="text-sm font-medium text-blue-400">
+            <div className="bg-primary/20 border-b border-primary/30 px-6 py-3 flex items-center justify-between">
+              <span className="text-sm font-medium text-primary">
                 {selectedNotifications.length} selected
               </span>
               <div className="flex gap-2">
                 <button 
                   onClick={() => handleBulkAction('read')}
-                  className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+                  className="px-3 py-1.5 bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
                 >
                   Mark as Read
                 </button>
                 <button 
                   onClick={() => handleBulkAction('delete')}
-                  className="px-3 py-1.5 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+                  className="px-3 py-1.5 bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
                 >
                   Delete
                 </button>
@@ -240,16 +240,16 @@ export default function NotificationSummary({ user }: { user: UserData }) {
           
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-white/[0.02] text-slate-500 text-[10px] uppercase tracking-widest font-bold">
+              <tr className="bg-muted/50 text-muted-foreground text-[10px] uppercase tracking-widest font-bold">
                 <th className="px-6 py-4 w-12">
                   <div className="relative flex items-center">
                     <input 
                       type="checkbox" 
                       checked={filteredNotifications.length > 0 && selectedNotifications.length === filteredNotifications.length}
                       onChange={toggleSelectAll}
-                      className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-white/20 bg-white/5 transition-all checked:bg-blue-600 checked:border-blue-600"
+                      className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-border bg-input transition-all checked:bg-primary checked:border-primary"
                     />
-                    <CheckCircle2 className="absolute h-3 w-3 text-white opacity-0 peer-checked:opacity-100 left-0.5 pointer-events-none transition-opacity" />
+                    <CheckCircle2 className="absolute h-3 w-3 text-primary-foreground opacity-0 peer-checked:opacity-100 left-0.5 pointer-events-none transition-opacity" />
                   </div>
                 </th>
                 <th className="px-6 py-4">Type</th>
@@ -259,22 +259,43 @@ export default function NotificationSummary({ user }: { user: UserData }) {
                 <th className="px-6 py-4 w-20 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-border">
+              <AnimatePresence mode="popLayout">
               {loading ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">Loading notifications...</td></tr>
+                <motion.tr
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">Loading notifications...</td>
+                </motion.tr>
               ) : filteredNotifications.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">No notifications found.</td></tr>
-              ) : filteredNotifications.map((n) => (
-                <tr key={n.id} className={`hover:bg-white/[0.02] transition-all group border-b border-white/[0.02] last:border-0 ${selectedNotifications.includes(n.id) ? 'bg-blue-500/5' : ''} ${!n.is_read ? 'bg-blue-500/[0.02]' : ''}`}>
+                <motion.tr
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">No notifications found.</td>
+                </motion.tr>
+              ) : filteredNotifications.map((n, index) => (
+                <motion.tr 
+                  key={n.id} 
+                  layout
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2, delay: index * 0.03 }}
+                  className={`hover:bg-muted/50 transition-all group border-b border-border last:border-0 ${selectedNotifications.includes(n.id) ? 'bg-primary/5' : ''} ${!n.is_read ? 'bg-primary/[0.02]' : ''}`}
+                >
                   <td className="px-6 py-4">
                     <div className="relative flex items-center">
                       <input 
                         type="checkbox" 
                         checked={selectedNotifications.includes(n.id)}
                         onChange={() => toggleSelectNotification(n.id)}
-                        className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-white/20 bg-white/5 transition-all checked:bg-blue-600 checked:border-blue-600"
+                        className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-border bg-input transition-all checked:bg-primary checked:border-primary"
                       />
-                      <CheckCircle2 className="absolute h-3 w-3 text-white opacity-0 peer-checked:opacity-100 left-0.5 pointer-events-none transition-opacity" />
+                      <CheckCircle2 className="absolute h-3 w-3 text-primary-foreground opacity-0 peer-checked:opacity-100 left-0.5 pointer-events-none transition-opacity" />
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -284,31 +305,34 @@ export default function NotificationSummary({ user }: { user: UserData }) {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-start gap-3">
-                      <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!n.is_read ? 'bg-blue-500' : 'bg-slate-700'}`} />
-                      <p className={`text-sm ${!n.is_read ? 'text-white font-medium' : 'text-slate-400'}`}>{n.message}</p>
+                      <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!n.is_read ? 'bg-primary' : 'bg-muted'}`} />
+                      <p className={`text-sm ${!n.is_read ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>{n.message}</p>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-xs text-slate-500 font-mono">
+                    <p className="text-xs text-muted-foreground font-mono">
                       {format(new Date(n.created_at), 'MMM d, yyyy HH:mm')}
                     </p>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${!n.is_read ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-500/10 text-slate-500'}`}>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${!n.is_read ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
                       {!n.is_read ? 'Unread' : 'Read'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <button 
+                    <motion.button 
+                      whileHover={{ scale: 1.1, color: '#f43f5e' }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => handleDelete(n.id)}
-                      className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                      className="p-2 text-muted-foreground hover:bg-rose-500/10 rounded-lg transition-colors"
                       title="Delete notification"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </motion.button>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>

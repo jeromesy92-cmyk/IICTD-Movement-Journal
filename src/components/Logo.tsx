@@ -82,16 +82,18 @@ export const Logo = ({ className = "w-12 h-12" }: { className?: string }) => {
         x="100" 
         y="118" 
         textAnchor="middle" 
-        fill="#38bdf8" 
+        fill="currentColor" 
+        className="text-primary"
         style={{ 
           fontSize: '52px', 
-          fontWeight: '900', 
-          fontFamily: 'system-ui, sans-serif',
-          letterSpacing: '-3px',
+          fontWeight: '700', 
+          fontFamily: 'var(--font-display), sans-serif',
+          letterSpacing: '-2px',
           filter: 'url(#glow)',
           paintOrder: 'stroke',
-          stroke: '#0369a1',
-          strokeWidth: '1px'
+          stroke: 'currentColor',
+          strokeWidth: '0.5px',
+          strokeOpacity: 0.3
         }}
       >
         IICTD
@@ -108,6 +110,7 @@ export const Logo = ({ className = "w-12 h-12" }: { className?: string }) => {
       </text>
       
       <text fill="#38bdf8" style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>
+        {/* @ts-ignore */}
         <textPath xlinkHref="#textPathBottom" startOffset="50%" textAnchor="middle" side="right">
           COMMUNICATION TECHNOLOGY DEPARTMENT
         </textPath>
@@ -119,10 +122,10 @@ export const Logo = ({ className = "w-12 h-12" }: { className?: string }) => {
 export const LogoFull = ({ className = "" }: { className?: string }) => {
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <Logo className="w-14 h-14" />
+      <Logo className="w-14 h-14 text-sky-400" />
       <div className="flex flex-col">
-        <span className="text-2xl font-black text-white tracking-tighter leading-none">IICTD</span>
-        <span className="text-[9px] font-bold text-sky-400 uppercase tracking-widest leading-none mt-1">Movement Journal</span>
+        <span className="text-2xl font-bold text-foreground font-display tracking-tight leading-none">IICTD</span>
+        <span className="text-[9px] font-bold text-sky-500 dark:text-sky-400 uppercase tracking-widest leading-none mt-1">Movement Journal</span>
       </div>
     </div>
   );

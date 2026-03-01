@@ -26,6 +26,7 @@
 
 @layer base {
   :root, [data-theme='light'] {
+    color-scheme: light;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -48,6 +49,7 @@
   }
 
   [data-theme='dark'] {
+    color-scheme: dark;
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -70,6 +72,7 @@
   }
 
   [data-theme='system'] {
+    color-scheme: dark;
     --background: 215 85% 15%;
     --foreground: 210 40% 98%;
     --card: 217 80% 20%;
@@ -114,14 +117,30 @@
 
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
+  filter: var(--calendar-filter, invert(0));
   opacity: 0.5;
   cursor: pointer;
 }
 
+[data-theme='dark'] {
+  --calendar-filter: invert(1);
+}
+
+[data-theme='system'] {
+  --calendar-filter: invert(1);
+}
+
+[data-theme='light'] {
+  --calendar-filter: invert(0);
+}
+
+select {
+  color-scheme: inherit;
+}
+
 select option {
-  background-color: #0ea5e9; /* Tailwind sky-500 (electric blue) */
-  color: white;
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
 }
 
 .toggle-switch {
@@ -131,11 +150,11 @@ select option {
 }
 
 .toggle-switch:checked {
-  @apply bg-blue-600;
+  @apply bg-primary;
 }
 
 .toggle-switch:not(:checked) {
-  @apply bg-slate-600;
+  @apply bg-muted;
 }
 
 .toggle-switch::after {

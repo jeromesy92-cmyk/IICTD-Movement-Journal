@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserData } from '../App';
 import { User, ChevronRight, ChevronDown, Search, Network } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface TreeNode extends UserData {
   children: TreeNode[];
@@ -16,23 +16,23 @@ const OrgNode: React.FC<{ node: TreeNode, level?: number }> = ({ node, level = 0
       <div 
         className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
           level === 0 
-            ? 'bg-blue-600/10 border-blue-600/20 mb-4' 
-            : 'bg-white/[0.02] border-white/5 hover:bg-white/5 mb-2'
+            ? 'bg-primary/10 border-primary/20 mb-4' 
+            : 'bg-muted/50 border-border hover:bg-accent mb-2'
         }`}
         style={{ marginLeft: `${level * 24}px` }}
       >
         {hasChildren && (
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-1 hover:bg-accent rounded-lg transition-colors"
           >
-            {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
         )}
         {!hasChildren && <div className="w-6" />}
         
         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-          level === 0 ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'
+          level === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
         }`}>
           {node.avatar_url ? (
             <img src={node.avatar_url} alt={node.full_name} className="w-full h-full rounded-full object-cover" />
@@ -42,15 +42,15 @@ const OrgNode: React.FC<{ node: TreeNode, level?: number }> = ({ node, level = 0
         </div>
         
         <div className="flex-1">
-          <p className={`font-medium ${level === 0 ? 'text-blue-400 text-lg' : 'text-slate-200'}`}>
+          <p className={`font-medium ${level === 0 ? 'text-primary text-lg' : 'text-foreground'}`}>
             {node.full_name}
           </p>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="uppercase tracking-wider font-bold">{node.role}</span>
-            {node.district && (
+            {node.district && node.district.length > 0 && (
               <>
                 <span>•</span>
-                <span>{node.district}</span>
+                <span>{Array.isArray(node.district) ? node.district.join(', ') : node.district}</span>
               </>
             )}
           </div>
@@ -68,7 +68,7 @@ const OrgNode: React.FC<{ node: TreeNode, level?: number }> = ({ node, level = 0
             <div className="relative">
               {/* Vertical line connecting children */}
               <div 
-                className="absolute left-[11px] top-0 bottom-4 w-px bg-white/10" 
+                className="absolute left-[11px] top-0 bottom-4 w-px bg-border" 
                 style={{ left: `${(level * 24) + 24 + 11}px` }} 
               />
               {node.children.map(child => (
@@ -89,10 +89,11 @@ export default function OrgChart({ user }: { user: UserData }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetch('/api/users')
+    fetch('/api/users?limit=1000')
       .then(res => res.json())
-      .then(data => {
-        setUsers(data);
+      .then(response => {
+        const usersData = response.data || [];
+        setUsers(usersData);
         setLoading(false);
       })
       .catch(err => {
@@ -148,7 +149,12 @@ export default function OrgChart({ user }: { user: UserData }) {
 
       const filteredUserIds = new Set<number>();
       users.forEach(u => {
-        if (u.full_name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        const matchesSearch = 
+          u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (Array.isArray(u.district) ? u.district.join(', ') : u.district || '').toLowerCase().includes(searchTerm.toLowerCase());
+          
+        if (matchesSearch) {
           filteredUserIds.add(u.id);
           // Add all superiors to the set
           let supervisorId = u.supervisor_id;
@@ -176,31 +182,31 @@ export default function OrgChart({ user }: { user: UserData }) {
     <div className="p-8 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-            <Network className="w-8 h-8 text-blue-500" />
+          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+            <Network className="w-8 h-8 text-primary" />
             Organization Hierarchy
           </h1>
-          <p className="text-slate-400">View the reporting structure and team organization.</p>
+          <p className="text-muted-foreground">View the reporting structure and team organization.</p>
         </div>
         
         <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input 
             type="text" 
             placeholder="Search users..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 transition-all"
+            className="w-full bg-muted/50 border border-border rounded-xl py-2 pl-10 pr-4 text-foreground focus:outline-none focus:border-ring transition-all"
           />
         </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <div className="org-chart-container bg-[#001a33] border border-white/10 rounded-2xl p-6 shadow-xl overflow-hidden">
+        <div className="org-chart-container bg-card border border-border rounded-2xl p-6 shadow-xl overflow-hidden">
           {tree.length > 0 ? (
             <div className="space-y-2">
               {tree.map(node => (
@@ -208,7 +214,7 @@ export default function OrgChart({ user }: { user: UserData }) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-slate-500">
+            <div className="text-center py-12 text-muted-foreground">
               No users found.
             </div>
           )}

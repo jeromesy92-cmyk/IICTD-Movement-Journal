@@ -181,7 +181,7 @@ export default function MyProfile({ user, onUpdate }: { user: UserData, onUpdate
   };
 
   return (
-    <div className="text-slate-900 dark:text-white font-sans">
+    <div className="text-foreground font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Picture Section */}
         <div className="lg:col-span-1 space-y-6">
@@ -275,7 +275,7 @@ export default function MyProfile({ user, onUpdate }: { user: UserData, onUpdate
             <ProfileInput label={t("Location")} id="location" value={formData.location} onChange={handleInputChange} icon={Location} locked />
             <ProfileInput label={t("Date of birth")} id="date_of_birth" value={formData.date_of_birth} onChange={handleInputChange} type="date" icon={Calendar} locked />
             <ProfileInput label={t("Language")} id="language" value={formData.language} onChange={handleInputChange} icon={Languages}>
-              <select id="language" name="language" value={formData.language || 'English'} onChange={handleInputChange} className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-3 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition w-full">
+              <select id="language" name="language" value={formData.language || 'English'} onChange={handleInputChange} className="bg-input border border-border rounded-md px-3 py-2 text-foreground focus:ring-2 focus:ring-ring focus:border-ring transition w-full cursor-pointer">
                 <option value="English">{t('English')}</option>
                 <option value="Tagalog">{t('Tagalog')}</option>
               </select>
@@ -295,14 +295,14 @@ export default function MyProfile({ user, onUpdate }: { user: UserData, onUpdate
       <div className="mt-8 pt-8 border-t border-border">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <ProfileInput label={t("Locale")} id="locale" value={formData.locale} onChange={handleInputChange} icon={Globe}>
-              <select id="locale" name="locale" value={formData.locale || 'English (United States)'} onChange={handleInputChange} className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-3 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition w-full">
+              <select id="locale" name="locale" value={formData.locale || 'English (United States)'} onChange={handleInputChange} className="bg-input border border-border rounded-md px-3 py-2 text-foreground focus:ring-2 focus:ring-ring focus:border-ring transition w-full cursor-pointer">
                   <option>English (United States)</option>
                   <option>Spanish (Spain)</option>
                   <option>French (France)</option>
               </select>
             </ProfileInput>
             <ProfileInput label={t("First day of week")} id="first_day_of_week" value={formData.first_day_of_week} onChange={handleInputChange} icon={Columns}>
-              <select id="first_day_of_week" name="first_day_of_week" value={formData.first_day_of_week || 'Sunday'} onChange={handleInputChange} className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-3 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition w-full">
+              <select id="first_day_of_week" name="first_day_of_week" value={formData.first_day_of_week || 'Sunday'} onChange={handleInputChange} className="bg-input border border-border rounded-md px-3 py-2 text-foreground focus:ring-2 focus:ring-ring focus:border-ring transition w-full cursor-pointer">
                   <option>Sunday</option>
                   <option>Monday</option>
               </select>

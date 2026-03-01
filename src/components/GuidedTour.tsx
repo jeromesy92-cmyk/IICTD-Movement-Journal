@@ -1,26 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import Joyride, { CallBackProps, STATUS, Step, ACTIONS, EVENTS } from 'react-joyride';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface GuidedTourProps {
   run: boolean;
   setRun: (run: boolean) => void;
   userRole: string;
+  userId: number;
 }
 
-export default function GuidedTour({ run, setRun, userRole }: GuidedTourProps) {
+export default function GuidedTour({ run, setRun, userRole, userId }: GuidedTourProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [stepIndex, setStepIndex] = useState(0);
 
-  const isAdmin = userRole === 'Administrator' || userRole === 'System Administrator';
-  const isSenior = isAdmin || userRole === 'Senior Field Engineer';
+  const isAdmin = useMemo(() => userRole === 'Administrator' || userRole === 'System Administrator', [userRole]);
+  const isSenior = useMemo(() => isAdmin || userRole === 'Senior Field Engineer', [isAdmin, userRole]);
 
-  const steps: Step[] = [
+  const steps: Step[] = useMemo(() => [
     {
       target: 'body',
       content: 'Welcome to the system! Let us take a quick tour to show you how to navigate around.',
-      placement: 'center',
+      placement: 'center' as const,
       disableBeacon: true,
     },
     {
@@ -81,54 +82,62 @@ export default function GuidedTour({ run, setRun, userRole }: GuidedTourProps) {
       placement: 'right' as const,
       disableBeacon: true,
     }
-  ];
+  ], [isAdmin, isSenior]);
 
-  const handleJoyrideCallback = (data: CallBackProps) => {
+  const handleJoyrideCallback = useCallback((data: CallBackProps) => {
     const { status, type, index, action } = data;
     
     if (([STATUS.FINISHED, STATUS.SKIPPED] as string[]).includes(status)) {
       setRun(false);
       setStepIndex(0);
-      const userStr = localStorage.getItem('iictd_user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        localStorage.setItem(`iictd_tour_seen_${user.id}`, 'true');
-      }
+      localStorage.setItem(`iictd_tour_seen_${userId}`, 'true');
       return;
     }
 
-    if (type === 'step:after' && action === 'next') {
-      setStepIndex(index + 1);
-    } else if (type === 'step:after' && action === 'prev') {
-      setStepIndex(index - 1);
+    if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
+      const nextIndex = index + (action === ACTIONS.PREV ? -1 : 1);
+      setStepIndex(nextIndex);
     }
-  };
+  }, [setRun, userId]);
 
   return (
     <Joyride
+      key={`${userRole}-${userId}`}
       steps={steps}
       run={run}
       stepIndex={stepIndex}
       continuous
       showProgress
       showSkipButton
+      scrollToFirstStep
+      disableScrolling={false}
       callback={handleJoyrideCallback}
       styles={{
         options: {
-          primaryColor: '#2563eb',
-          backgroundColor: '#0f172a',
-          textColor: '#f8fafc',
-          arrowColor: '#0f172a',
+          primaryColor: 'hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--card))',
+          textColor: 'hsl(var(--card-foreground))',
+          arrowColor: 'hsl(var(--card))',
           zIndex: 10000,
+          overlayColor: 'rgba(0, 0, 0, 0.5)',
+          spotlightShadow: '0 0 15px rgba(0, 0, 0, 0.5)',
         },
         tooltipContainer: {
           textAlign: 'left',
+          borderRadius: '12px',
         },
         buttonNext: {
-          backgroundColor: '#2563eb',
+          backgroundColor: 'hsl(var(--primary))',
+          color: 'hsl(var(--primary-foreground))',
+          borderRadius: '8px',
+          padding: '8px 16px',
         },
         buttonBack: {
-          color: '#94a3b8',
+          color: 'hsl(var(--muted-foreground))',
+          marginRight: '10px',
+        },
+        buttonSkip: {
+          color: 'hsl(var(--muted-foreground))',
         }
       }}
     />

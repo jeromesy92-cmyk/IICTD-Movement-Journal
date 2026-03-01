@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   MapPin, 
@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronDown,
   User,
   Shield,
   Briefcase,
@@ -50,12 +51,17 @@ import MyProfile from './components/MyProfile';
 import StatusModal from './components/StatusModal';
 import AppearanceModal from './components/AppearanceModal';
 import NotificationSummary from './components/NotificationSummary';
+import DebugModal from './components/DebugModal';
 
 import OrgChart from './components/OrgChart';
 import MovementMap from './components/MovementMap';
 
 // Types
 import GuidedTour from './components/GuidedTour';
+
+import PageTransition from './components/PageTransition';
+
+import SupportAI from './components/SupportAI';
 
 export type Role = 'Administrator' | 'System Administrator' | 'Senior Field Engineer' | 'Field Engineer';
 
@@ -66,6 +72,7 @@ export interface UserData {
   full_name: string;
   division: string;
   district: string[]; // Changed to array
+  area?: string;
   base_office?: string;
   role: Role;
   supervisor_id?: number;
@@ -102,8 +109,101 @@ export default function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isAppearanceModalOpen, setIsAppearanceModalOpen] = useState(false);
+  const [isDebugModalOpen, setIsDebugModalOpen] = useState(false);
+  const [systemErrors, setSystemErrors] = useState<any[]>([]);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
   const [runTour, setRunTour] = useState(false);
+
+  // Error Tracking Logic
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      const newError = {
+        id: Math.random().toString(36).substr(2, 9),
+        timestamp: new Date(),
+        message: event.message || 'Unknown runtime error',
+        stack: event.error?.stack || 'N/A',
+        type: 'error' as const,
+      };
+      setSystemErrors(prev => [newError, ...prev].slice(0, 50));
+    };
+
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      const newError = {
+        id: Math.random().toString(36).substr(2, 9),
+        timestamp: new Date(),
+        message: event.reason?.message || 'Unhandled promise rejection',
+        stack: event.reason?.stack || 'N/A',
+        type: 'error' as const,
+      };
+      setSystemErrors(prev => [newError, ...prev].slice(0, 50));
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+
+    // Intercept fetch for network errors and adding auth headers
+    const originalFetch = window.fetch;
+    try {
+      Object.defineProperty(window, 'fetch', {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: async (input: RequestInfo | URL, init?: RequestInit) => {
+          const userStr = localStorage.getItem('iictd_user');
+          const currentUser = userStr ? JSON.parse(userStr) : null;
+          
+          const newInit = { ...init };
+          if (currentUser?.id) {
+            newInit.headers = {
+              ...newInit.headers,
+              'X-User-Id': currentUser.id.toString()
+            };
+          }
+
+          try {
+            const response = await originalFetch(input, newInit);
+            if (!response.ok) {
+              const newError = {
+                id: Math.random().toString(36).substr(2, 9),
+                timestamp: new Date(),
+                message: `Network Error: ${response.status} ${response.statusText} at ${input}`,
+                type: 'network' as const,
+              };
+              setSystemErrors(prev => [newError, ...prev].slice(0, 50));
+            }
+            return response;
+          } catch (error: any) {
+            const newError = {
+              id: Math.random().toString(36).substr(2, 9),
+              timestamp: new Date(),
+              message: `Fetch Failed: ${error.message} at ${input}`,
+              type: 'network' as const,
+            };
+            setSystemErrors(prev => [newError, ...prev].slice(0, 50));
+            throw error;
+          }
+        }
+      });
+    } catch (e) {
+      console.warn("Could not intercept fetch globally:", e);
+    }
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+      try {
+        Object.defineProperty(window, 'fetch', {
+          configurable: true,
+          enumerable: true,
+          writable: true,
+          value: originalFetch
+        });
+      } catch (e) {
+        // Fallback for environments where defineProperty might fail on restore
+        try { (window as any).fetch = originalFetch; } catch (e2) {}
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -150,11 +250,11 @@ export default function App() {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'approval': return <CheckCircle className="w-3 h-3 text-emerald-400" />;
-      case 'assignment': return <UserPlus className="w-3 h-3 text-blue-400" />;
-      case 'alert': return <AlertCircle className="w-3 h-3 text-rose-400" />;
-      case 'system': return <InfoIcon className="w-3 h-3 text-amber-400" />;
-      default: return <Bell className="w-3 h-3 text-slate-400" />;
+      case 'approval': return <CheckCircle className="w-3 h-3 text-emerald-500" />;
+      case 'assignment': return <UserPlus className="w-3 h-3 text-blue-500" />;
+      case 'alert': return <AlertCircle className="w-3 h-3 text-rose-500" />;
+      case 'system': return <InfoIcon className="w-3 h-3 text-amber-500" />;
+      default: return <Bell className="w-3 h-3 text-muted-foreground" />;
     }
   };
 
@@ -253,6 +353,8 @@ export default function App() {
     };
   }, [user]);
 
+  const location = useLocation();
+
   if (!user) {
     return (
       <>
@@ -263,16 +365,15 @@ export default function App() {
   }
 
   return (
-    <Router>
-                  <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans">
-        <Sidebar user={user} />
-        
-        <main className="flex-1 flex flex-col overflow-hidden relative">
-          {/* Background Glows */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] -z-10 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-600/10 blur-[120px] -z-10 pointer-events-none" />
+    <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans">
+      <Sidebar user={user} />
+      
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Background Glows */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 blur-[120px] -z-10 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/10 blur-[120px] -z-10 pointer-events-none" />
 
-                              <header className="h-16 border-b border-border flex items-center justify-between px-8 bg-card/80 backdrop-blur-md z-10">
+        <header className="h-16 border-b border-border flex items-center justify-between px-8 bg-card/80 backdrop-blur-md z-10">
             <div className="flex items-center gap-4">
                                           <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 {format(new Date(), 'EEEE, MMMM do yyyy')}
@@ -294,9 +395,16 @@ export default function App() {
               {/* Debug/Error Icon */}
               <div className="relative">
                 <button 
-                  className="relative focus:outline-none"
+                  className="relative focus:outline-none p-2 rounded-full hover:bg-accent transition-colors group"
+                  onClick={() => setIsDebugModalOpen(true)}
+                  title="System Debug Console"
                 >
-                  <Bug className="w-6 h-6 text-muted-foreground" />
+                  <Bug className={`w-6 h-6 transition-all ${systemErrors.length > 0 ? 'text-destructive animate-pulse' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                  {systemErrors.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center border-2 border-card">
+                      {systemErrors.length}
+                    </span>
+                  )}
                 </button>
               </div>
 
@@ -308,7 +416,7 @@ export default function App() {
                 >
                   <Bell className={`w-6 h-6 transition-colors ${isNotificationsOpen ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`} />
                   {filteredNotifications.filter((n: any) => !n.is_read).length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
                       {filteredNotifications.filter((n: any) => !n.is_read).length}
                     </span>
                   )}
@@ -325,7 +433,7 @@ export default function App() {
                         <>
                           <div className="max-h-64 overflow-y-auto space-y-2 custom-scrollbar">
                             {filteredNotifications.slice(0, 5).map((n: any) => (
-                              <div key={n.id} className={`p-3 rounded-lg border border-transparent transition-all ${n.is_read ? 'opacity-50' : 'bg-blue-500/5 border-blue-500/10 hover:bg-blue-500/10'}`}>
+                              <div key={n.id} className={`p-3 rounded-lg border border-transparent transition-all ${n.is_read ? 'opacity-50' : 'bg-muted/50 border-border hover:bg-accent'}`}>
                                 <div className="flex gap-3">
                                   <div className="mt-0.5 shrink-0">
                                     {getNotificationIcon(n.type)}
@@ -333,7 +441,7 @@ export default function App() {
                                   <div className="flex-1">
                                     <p className="text-xs text-popover-foreground leading-relaxed">{n.message}</p>
                                     {!n.is_read && (
-                                      <button onClick={() => handleMarkAsRead(n.id)} className="text-[10px] font-bold uppercase tracking-wider text-blue-400 hover:text-blue-300 mt-2 transition-colors">
+                                      <button onClick={() => handleMarkAsRead(n.id)} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:text-primary/80 mt-2 transition-colors">
                                         {t('Mark as read')}
                                       </button>
                                     )}
@@ -345,7 +453,7 @@ export default function App() {
                           <div className="pt-2 mt-2 border-t border-border">
                             <Link 
                               to="/notifications" 
-                              className="block w-full text-center text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                              className="block w-full text-center text-xs font-medium text-primary hover:text-primary/80 transition-colors"
                               onClick={() => setIsNotificationsOpen(false)}
                             >
                               {t('View all notifications')}
@@ -364,7 +472,7 @@ export default function App() {
                   <img 
                     src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=0284c7&color=fff&size=128`}
                     alt="Avatar"
-                    className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/50 shadow-lg hover:ring-2 ring-blue-400 transition-all"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-primary/50 shadow-lg hover:ring-2 ring-primary transition-all"
                   />
                 </button>
 
@@ -393,7 +501,7 @@ export default function App() {
                           <Link to="/profile" onClick={() => setIsProfileMenuOpen(false)}><ProfileMenuItem icon={<Info />} text={t("About & What's new")} /></Link>
                           <Link to="/profile" onClick={() => setIsProfileMenuOpen(false)}><ProfileMenuItem icon={<HelpCircle />} text={t("Help & privacy")} /></Link>
                                                                               <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground hover:bg-accent rounded-md">
-                                                        <LogOut className="w-4 h-4 text-slate-500" />
+                                                        <LogOut className="w-4 h-4 text-muted-foreground" />
                             <span>{t('Log out')}</span>
                           </button>
                         </div>
@@ -407,48 +515,56 @@ export default function App() {
           </header>
 
           <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-            <Routes>
-              <Route path="/" element={<Dashboard user={user} />} />
-              <Route path="/movements" element={<MovementLog user={user} />} />
-              <Route path="/org-chart" element={<OrgChart user={user} />} />
-              <Route path="/movement-map" element={<MovementMap user={user} />} />
-              <Route path="/profile" element={<MyProfile user={user} onUpdate={handleProfileUpdate} />} />
-              
-              <Route path="/settings" element={<SettingsPage user={user} />} />
-              <Route path="/notifications" element={<NotificationSummary user={user} />} />
-              
-              {/* Supervisor & Admin Routes */}
-              {(user.role === 'Administrator' || user.role === 'System Administrator' || user.role === 'Senior Field Engineer') && (
-                <>
-                  <Route path="/reports" element={<Reports user={user} />} />
-                </>
-              )}
+            <AnimatePresence mode="wait">
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<PageTransition><Dashboard user={user} /></PageTransition>} />
+                <Route path="/movements" element={<PageTransition><MovementLog user={user} /></PageTransition>} />
+                <Route path="/org-chart" element={<PageTransition><OrgChart user={user} /></PageTransition>} />
+                <Route path="/movement-map" element={<PageTransition><MovementMap user={user} /></PageTransition>} />
+                <Route path="/profile" element={<PageTransition><MyProfile user={user} onUpdate={handleProfileUpdate} /></PageTransition>} />
+                
+                <Route path="/settings" element={<PageTransition><SettingsPage user={user} /></PageTransition>} />
+                <Route path="/notifications" element={<PageTransition><NotificationSummary user={user} /></PageTransition>} />
+                
+                {/* Supervisor & Admin Routes */}
+                {(user.role === 'Administrator' || user.role === 'System Administrator' || user.role === 'Senior Field Engineer') && (
+                  <>
+                    <Route path="/reports" element={<PageTransition><Reports user={user} /></PageTransition>} />
+                  </>
+                )}
 
-              {/* Admin Only Routes */}
-              {(user.role === 'Administrator' || user.role === 'System Administrator') && (
-                <>
-                  <Route path="/users" element={<UserManagement user={user} />} />
-                  <Route path="/audit" element={<AuditLogs />} />
-                </>
-              )}
+                {/* Admin Only Routes */}
+                {(user.role === 'Administrator' || user.role === 'System Administrator') && (
+                  <>
+                    <Route path="/users" element={<PageTransition><UserManagement user={user} /></PageTransition>} />
+                    <Route path="/audit" element={<PageTransition><AuditLogs /></PageTransition>} />
+                  </>
+                )}
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AnimatePresence>
           </div>
         </main>
         
         <Toaster position="top-right" />
         {isStatusModalOpen && <StatusModal user={user} onClose={() => setIsStatusModalOpen(false)} onStatusUpdate={handleStatusUpdate} />}
         {isAppearanceModalOpen && <AppearanceModal theme={theme} setTheme={setTheme} onClose={() => setIsAppearanceModalOpen(false)} />}
-        <GuidedTour run={runTour} setRun={setRunTour} userRole={user.role} />
+        <DebugModal 
+          isOpen={isDebugModalOpen} 
+          onClose={() => setIsDebugModalOpen(false)} 
+          errors={systemErrors} 
+          onClear={() => setSystemErrors([])} 
+        />
+        <SupportAI errors={systemErrors} onClearErrors={() => setSystemErrors([])} />
+        <GuidedTour run={runTour} setRun={setRunTour} userRole={user.role} userId={user.id} />
       </div>
-    </Router>
   );
 }
 
 const ProfileMenuItem = ({ icon, text }: { icon: React.ReactNode, text: string }) => (
   <div className="w-full flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground hover:bg-accent rounded-md">
-    {React.cloneElement(icon as React.ReactElement, { className: 'w-4 h-4 text-muted-foreground' })}
+    {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-4 h-4 text-muted-foreground' })}
     <span>{text}</span>
   </div>
 );
@@ -456,44 +572,118 @@ const ProfileMenuItem = ({ icon, text }: { icon: React.ReactNode, text: string }
 function Sidebar({ user }: { user: UserData }) {
   const location = useLocation();
   const { t } = useTranslation();
-  
+  const [openMenus, setOpenMenus] = useState<string[]>([]);
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus(prev => 
+      prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
+    );
+  };
+
   const menuItems = [
     { icon: LayoutDashboard, label: t('Dashboard'), path: '/', roles: ['Administrator', 'System Administrator', 'Senior Field Engineer', 'Field Engineer'] },
-    { icon: MapPin, label: t('Movement Journal'), path: '/movements', roles: ['Administrator', 'System Administrator', 'Senior Field Engineer', 'Field Engineer'] },
+    { 
+      icon: MapPin, 
+      label: t('Movement Journal'), 
+      roles: ['Administrator', 'System Administrator', 'Senior Field Engineer', 'Field Engineer'],
+      children: [
+        { icon: FileText, label: t('Journal Log'), path: '/movements', roles: ['Administrator', 'System Administrator', 'Senior Field Engineer', 'Field Engineer'] },
+        { icon: BarChart3, label: t('Reports'), path: '/reports', roles: ['Administrator', 'System Administrator', 'Senior Field Engineer'] },
+      ]
+    },
     { icon: Network, label: t('Org Chart'), path: '/org-chart', roles: ['Administrator', 'System Administrator', 'Senior Field Engineer', 'Field Engineer'] },
     { icon: Globe, label: t('Movement Map'), path: '/movement-map', roles: ['Administrator', 'System Administrator', 'Senior Field Engineer', 'Field Engineer'] },
-    { icon: BarChart3, label: t('Reports'), path: '/reports', roles: ['Administrator', 'System Administrator', 'Senior Field Engineer'] },
     { icon: Users, label: t('User Management'), path: '/users', roles: ['Administrator', 'System Administrator'] },
     { icon: History, label: t('Audit Trails'), path: '/audit', roles: ['Administrator', 'System Administrator'] },
     { icon: User, label: t('My Profile'), path: '/profile', roles: ['Administrator', 'System Administrator', 'Senior Field Engineer', 'Field Engineer'] },
     { icon: Settings, label: user.role === 'Administrator' || user.role === 'System Administrator' ? t('System Settings') : t('Settings'), path: '/settings', roles: ['Administrator', 'System Administrator', 'Senior Field Engineer', 'Field Engineer'] },
   ];
 
+  // Auto-open menu if child is active
+  useEffect(() => {
+    const activeParent = menuItems.find(item => 
+      item.children?.some(child => location.pathname === child.path)
+    );
+    if (activeParent && !openMenus.includes(activeParent.label)) {
+      setOpenMenus(prev => [...prev, activeParent.label]);
+    }
+  }, [location.pathname]);
+
   return (
-            <aside className="w-72 bg-card/80 border-r border-border flex flex-col z-20">
-      <div className="p-8">
+    <aside className="w-72 bg-card/80 border-r border-border flex flex-col z-20">
+      <div className="p-8 flex flex-col h-full">
         <LogoFull className="mb-8" />
 
-        <nav className="space-y-1 flex-1">
+        <nav className="space-y-1 flex-1 overflow-y-auto custom-scrollbar pr-2">
           {menuItems.filter(item => item.roles.includes(user.role)).map((item) => {
-            const isActive = location.pathname === item.path;
-            const tourClass = `nav-${item.path === '/' ? 'dashboard' : item.path.substring(1)}`;
+            const hasChildren = item.children && item.children.length > 0;
+            const isMenuOpen = openMenus.includes(item.label);
+            const isActive = item.path ? location.pathname === item.path : item.children?.some(c => location.pathname === c.path);
+            const tourClass = item.path ? `nav-${item.path === '/' ? 'dashboard' : item.path.substring(1)}` : `nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
+            
+            if (hasChildren) {
+              return (
+                <div key={item.label} className="space-y-1">
+                  <button
+                    onClick={() => toggleMenu(item.label)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${tourClass} ${
+                      isActive && !isMenuOpen ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
+                    <span className="font-medium text-sm">{item.label}</span>
+                    <ChevronDown className={`ml-auto w-4 h-4 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {isMenuOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden pl-4 space-y-1"
+                      >
+                        {item.children!.filter(child => child.roles.includes(user.role)).map((child) => {
+                          const isChildActive = location.pathname === child.path;
+                          const childTourClass = `nav-${child.path.substring(1)}`;
+                          return (
+                            <Link
+                              key={child.path}
+                              to={child.path}
+                              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group ${childTourClass} ${
+                                isChildActive 
+                                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
+                                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                              }`}
+                            >
+                              <child.icon className={`w-4 h-4 ${isChildActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-primary'}`} />
+                              <span className="font-medium text-xs">{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={item.path}
-                to={item.path}
+                to={item.path!}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${tourClass} ${
-                                                      isActive 
+                  isActive 
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 }`}
               >
-                                                 <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-primary'}`} />
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-primary'}`} />
                 <span className="font-medium text-sm">{item.label}</span>
                 {isActive && (
                   <motion.div 
                     layoutId="active-pill"
-                    className="ml-auto w-1.5 h-1.5 rounded-full bg-white"
+                    className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-foreground"
                   />
                 )}
               </Link>
@@ -505,7 +695,7 @@ function Sidebar({ user }: { user: UserData }) {
         <div className="mt-auto pt-8 border-t border-border">
           <Link 
             to="/profile"
-            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-accent transition-all group"
+            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-accent transition-all group nav-profile"
           >
             <div className="relative">
               <img 
